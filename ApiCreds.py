@@ -2,8 +2,8 @@
 ####################################################
 ####################################################
 
-API_KEY  = "z3MzW5Si6oC4XveH8N4"
-APP_NAME = "SuperAwesomeAPI"
+API_KEY  = "z3MzW5Si6oC4XveH8N4" 
+APP_NAME = "jse-api"  # Example: "SuperAwesomeAPI"
 
 BASE_URL = "https://"+APP_NAME+".herokuapp.com/"
 FUNC     = 'master'
