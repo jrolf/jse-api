@@ -1,0 +1,13 @@
+
+# requirements.txt
+firefly-python
+requests
+sklearn
+numpy
+pandas
+scipy
+
+
+
+
+
