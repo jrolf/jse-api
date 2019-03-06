@@ -5,6 +5,8 @@ from copy import *
 from scipy.optimize import curve_fit
 from sklearn.metrics import *
 
+from collections import defaultdict as defd 
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -93,6 +95,7 @@ class DecayModel:
 fn = 'DATA/JS_PULLED2.csv'
 PULL = pd.read_csv(fn) 
 
+ZeroRank = defd(lambda:999999) 
 CATS = list(PULL.columns)[1:]
 Models = {}
 for cat in CATS:
@@ -109,68 +112,51 @@ for cat in CATS:
             Models[cat] = model
             #print('Log-Fit:',cat)
 
+            x0 = list(range(999999))
+            y0 = list(np.clip(model.predict(x0),0,10*12).astype('int')) 
+            try:    zero_rank = y0.index(0) 
+            except: zero_rank = 999999
+            ZeroRank[cat] = zero_rank  
+
         except:
             #print('Non-Fit:',cat)
             pass 
 
+
 #################################################################
 ################################################################# 
 
-# Individual Prediction for Rank->QSold 
-def JungleScoutPredict(category,rank):
-    model = Models[category]
-    return model.predict([rank])[0] 
-
-# Batched Predictions for RankList->QSoldList  
-def JungleScoutBatch(category,rank_list):
-    model = Models[category]
-    return list(model.predict(rank_list)) 
-
+# Returns a list of valid category names: 
 def GetCategories():
-	return sorted(Models) 
-
+    return sorted(Models)
+    
+# Individual Prediction for Rank->QSold 
+# Batched Predictions for RankList->QSoldList  
+def JungleScoutPredict(category,rank):
+    if 'list' in str(type(category)): CAT_LIST = category
+    else:                             CAT_LIST = [category]
+    if 'list' in str(type(rank)):    RANK_LIST = rank
+    else:                            RANK_LIST = [rank] 
+    if   len(CAT_LIST) < len(RANK_LIST):
+        CAT_LIST  = [CAT_LIST[-1] for _ in range(len(RANK_LIST))]
+    elif len(CAT_LIST) > len(RANK_LIST):
+        RANK_LIST = [RANK_LIST[-1] for _ in range(len(CAT_LIST))]
+    results = []
+    for cat,rank in zip(CAT_LIST,RANK_LIST):
+        zero_rank = ZeroRank[cat]
+        if rank>=zero_rank:
+            results.append(0.0)
+            continue
+        qsold = Models[cat].predict([rank])[0]
+        results.append(qsold)
+    if len(results)>1:
+        return results
+    else:
+        return results[0] 
+        
 #################################################################
 ################################################################# 
 
-
-#qsold = 
-
-Notes = '''
-
->>> category = 'Home & Garden'
->>> qsold = JungleScoutPredict(category,1000)
->>> qsold
-332.36
-
->>> category = 'Home & Garden'
->>> ranks = [10,100,1000,10000]
->>> qsold_list = JungleScoutBatch(category,ranks)
-[1456.19, 1004.18, 332.36, 47.06]
-
->>> cats = GetCategories()
->>> for cat in cats: print(cat)
-
-Appliances
-Arts, Crafts & Sewing
-Automotive
-Baby
-Cell Phones & Accessories
-Clothing & Accessories
-Electronics
-Health & Personal Care
-Home & Garden
-Home & Kitchen
-Home Improvement
-Industrial & Scientific
-Musical Instruments
-Office Product
-Pet Supplies
-Sports & Outdoors
-Toys & Games
-
-
-'''
-
-
+# [END]
 
 
