@@ -141,6 +141,10 @@ def JungleScoutPredict(category,rank):
         CAT_LIST  = [CAT_LIST[-1] for _ in range(len(RANK_LIST))]
     elif len(CAT_LIST) > len(RANK_LIST):
         RANK_LIST = [RANK_LIST[-1] for _ in range(len(CAT_LIST))]
+
+    CAT_LIST  = [str(a).strip() for a in CAT_LIST] 
+    RANK_LIST = [float(a) for a in RANK_LIST]  
+
     results = []
     for cat,rank in zip(CAT_LIST,RANK_LIST):
         zero_rank = ZeroRank[cat]
@@ -152,7 +156,7 @@ def JungleScoutPredict(category,rank):
     if len(results)>1:
         return results
     else:
-        return results[0] 
+        return results #[0] 
         
 #################################################################
 ################################################################# 

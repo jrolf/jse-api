@@ -28,11 +28,10 @@ import pandas as pd
 
 GoodFuncs = [
     'echo', 
-    'time_now',  
+    'time_now',
     
-    'JS_Predict',
-    'JS_Batch',
     'JS_GetCats', 
+    'JS_Predict',
 ]
 
 ####################################################
@@ -73,7 +72,7 @@ def time_now(x):
 ####################################################
 ####################################################
 
-def JS_GetCats(x=[]):
+def JS_GetCats(x=[]): 
     return GetCategories()
 
 def JS_Predict(x=[]):
@@ -83,7 +82,7 @@ def JS_Predict(x=[]):
 ####################################################
 ####################################################
 
-Notes '''
+Notes = '''
 
 USAGE: 
 
