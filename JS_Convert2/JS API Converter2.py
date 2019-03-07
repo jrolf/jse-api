@@ -1,5 +1,5 @@
 
-#p = "c:\\users\\erik.raber\\appdata\\local\\continuum\\anaconda3\\lib\\site-packages"
+#p = "c:\\users\\"
 #import sys
 #if p not in sys.path: sys.path = [p]+sys.path
 
