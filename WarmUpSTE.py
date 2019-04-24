@@ -1,27 +1,4 @@
-# funcs.py
 
-####################################################
-####################################################
-
-### !!!!! OMG !!!!!!
-### Primary Finding:
-###     For some reason, storing files deeper than 
-###     one folder causes an error where the filename
-###     cannot be found.
-### Example:
-###     BAD:   fn = 'DATA/MINDS/BASE_DATA/Words.csv'
-###     GOOD:  fn = 'DATA/Words.csv'
-
-####################################################
-####################################################
-
-from ApiCreds  import *
-from WarmUpJSE import *
-#from WarmUpSTE import *
-
-import sys, codecs, csv 
-from random import shuffle
-from datetime import datetime,timedelta 
 
 import pandas as pd
 import numpy  as np
@@ -37,29 +14,38 @@ from DemandHelper import *
 import warnings
 warnings.filterwarnings("ignore")
 
-####################################################
-####################################################
+#################################################################
+################################################################# 
+#################################################################
 
-GoodFuncs = [
-    'echo', 
-    'time_now',
+class DemandForecastModel:
+    def __init__(self,rank_model='',forecast='',rmodel_beta=1.0,final_beta=1.0):
+        if rank_model != '': 
+            self.ingest(rank_model,forecast,rmodel_beta,final_beta) 
     
-    'JS_GetCats', 
-    'JS_Predict',
-
-    'ST_GetCats', 
-    'ST_Predict',
-    'ST_Predict_Data', 
-]
-
+    def ingest(self,rank_model,forecast,rmodel_beta=1.0,final_beta=1.0): 
+        self.rank_model = rank_model
+        self.rmodel_beta = rmodel_beta 
+        self.forecast = forecast 
+        self.final_beta = final_beta  
+        self.alldates = sorted(forecast.index) 
+    
+    def predict(self,rank=10000,date='2018-07-04',buybox=100):
+        if 'str' not in str(type(date)): date = str(date)[:10] 
+        pred1 = self.rank_model.predict([rank])[0] 
+        pred2 = pred1*self.rmodel_beta 
+        d = self.forecast.loc[date] 
+        mid,lo,hi = d['yhat'],d['yhat_lower'],d['yhat_upper']  
+        rdr_preds = np.array([lo,mid,hi]) 
+        pred3 = pred2*rdr_preds 
+        pred4 = pred3*self.final_beta 
+        pred5 = global2local(pred4,buybox)
+        return pred5
 
 #################################################################
 ################################################################# 
-#################################################################
 
 
-#################################################################
-################################################################# 
 
 # Export a fitted model to text file:
 # These filenames normally end in '.pkl'
@@ -77,6 +63,9 @@ def ImportModel(filename):
 def GetToday():
 	today = datetime.datetime.today()
 	return str(today)[:10]
+
+
+
 
 #################################################################
 ################################################################# 
@@ -204,151 +193,51 @@ def SpreePred(cat,rank,date1='today',date2=30,bb_ratio=1.0,md_ratio=0.62):
 #################################################################
 ################################################################# 
 
-
-####################################################
-####################################################  
-
-def master(key='',fname='',data={}):
-    if str(key) != API_KEY: 
-        return {"message":"invalid key"}
-    if fname not in GoodFuncs: 
-        return {"message":"unapproved func"}
-    
-    try:    f = eval(fname)
-    except: return {"message":"eval failed"}
-
-    try:    return f(data)
-    except: return {"message":"processing failed"}
-
-####################################################
-####################################################
-
-# Returns the Input:
-def echo(x):
-    return x 
-
-def get_time(dif_hrs=0):
-    dt = datetime.now()
-    if dif_hrs!=0:
-        dt = dt+timedelta(hours=dif_hrs)
-    return dt  
-
-def GetCST():
-    return get_time(-6)
-
-def time_now(x): 
-    stamp = str(GetCST()) 
-    return {'Time in CST':stamp}  
-
-#################################################################
-################################################################# 
-#################################################################
-################################################################# 
-
-def JS_GetCats(x=[]): 
-    return GetCategories()
-
-def JS_Predict(x=[]):
-    cat,rank = tuple(x)
-    return JungleScoutPredict(cat,rank) 
-
-####################################################
-####################################################
-
-def ST_GetCats(x=[]): 
-    return GetCategories2()
-
-# SpreetailPredict(cat,rank,date1='today',date2=30,bb_ratio=1.0,md_ratio=0.62)
-def ST_Predict(x=[]): 
-    if 'list' in str(type(x)):
-        result = SpreetailPredict(tuple(x)) 
-        return result[0]
-    d = { 'cat':'H&G','rank':10000,'date1':'today','date2':30,'bb_ratio':1.0,'md_ratio':0.62}
-    for k in list(x): d[k] = x[k] 
-    result = SpreetailPredict(
-        d['cat'],
-        d['rank'],
-        date1=d['date1'],
-        date2=d['date1'], 
-        bb_ratio=d['bb_ratio'],
-        md_ratio=d['md_ratio'])
-    return result[0] 
-
-def ST_Predict_Data(x=[]): 
-    if 'list' in str(type(x)):
-        result = SpreetailPredict(tuple(x)) 
-        return result[1]
-    d = { 'cat':'H&G','rank':10000,'date1':'today','date2':30,'bb_ratio':1.0,'md_ratio':0.62}
-    for k in list(x): d[k] = x[k] 
-    result = SpreetailPredict(
-        d['cat'],
-        d['rank'],
-        date1=d['date1'],
-        date2=d['date1'], 
-        bb_ratio=d['bb_ratio'],
-        md_ratio=d['md_ratio'])
-    return result[1]
-
-    
-
-####################################################
-####################################################
-
-Notes = '''
-
-USAGE: 
-
->>> cats = GetCategories()
->>> 
->>> for cat in cats: print(cat)
-
-Appliances
-Arts, Crafts & Sewing
-Automotive
-Baby
-Cell Phones & Accessories
-Clothing & Accessories
-Electronics
-Health & Personal Care
-Home & Garden
-Home & Kitchen
-Home Improvement
-Industrial & Scientific
-Musical Instruments
-Office Product
-Pet Supplies
-Sports & Outdoors
-Toys & Games
-
-
->>> X1 = ['Home Improvement',1234]
->>> JS_Predict(X1)
-1238.26
-
->>> X1 = ['Home Improvement',[1234,23456,123456]]
->>> JS_Predict(X1)
-[1238.26, 78.03, 0.0]
-
->>> X1 = [['Home Improvement','Home & Garden'],1000]
->>> JS_Predict(X1)
-[1347.8, 332.36]
-
->>> X1 = [['Home Improvement','Home & Garden'],[1000,1000]]
->>> JS_Predict(X1)
-[1347.8, 332.36]
-
->>> category = 'Home & Garden'
->>> ranks = [10,100,1000,10000] 
->>> JS_Predict([category,ranks])
-[1456.19, 1004.18, 332.36, 47.06]
-
-
-'''
-
-####################################################
-####################################################
-
 # [END]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
